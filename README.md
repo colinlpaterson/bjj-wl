@@ -1,8 +1,28 @@
-# BJJ Workout Log Tracker
+# 🥋 BJJ Workout Log (Java Command-Line App)
 
-A Java command-line app to log Brazilian Jiu-Jitsu workouts.
+A simple command-line Java application to log Brazilian Jiu-Jitsu (BJJ) workouts.  
+You can record drills, multiple sparring rounds, and detailed round observations.  
+Each workout is saved as structured JSON in `data/workouts.jsonl`, making it easy to analyze or import into a database or mobile app later.
 
-## Features
-- Prompts for date, drills, rounds, and notes
-- Displays a summary of the workout
-- Runs directly from the terminal using `javac` and `java`
+---
+
+## Getting Started
+
+### 1️ Clone the Repository
+```bash
+git clone https://github.com/colinlpaterson/bjj-wl.git
+cd "BJJ WL"
+```
+### 2️ Verify Prerequisites
+java -version    # should show JDK 17 or newer
+git --version
+
+```
+### 3 Build and Run
+```bash
+./build.sh
+./run.sh
+
+```
+
+
