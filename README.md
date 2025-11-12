@@ -23,7 +23,7 @@ git --version
 ./build.sh
 ./run.sh
 
-```bash
+```
 
 ## Development Workflow
 
