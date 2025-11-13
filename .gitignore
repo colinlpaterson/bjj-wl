@@ -1,0 +1,16 @@
+# Build output
+out/
+*.class
+
+# macOS
+.DS_Store
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Data files (keep data/ in repo but ignore personal logs)
+data/*.jsonl
+
+# Allow keeping the folder structure
+!.gitkeep
