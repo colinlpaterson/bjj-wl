@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Workout {
+    // NEW: unique identifier for this workout
+    public String id;
+
     public String date;     // ISO yyyy-MM-dd
     public String drills;
     public Integer roundsCount;
@@ -12,8 +15,14 @@ public class Workout {
 
     public String toJson() {
         StringBuilder sb = new StringBuilder();
-        sb.append("{")
-          .append("\"date\":\"").append(escape(date)).append("\",")
+        sb.append("{");
+
+        // id is optional for older records, but we include it when present
+        if (id != null && !id.isEmpty()) {
+            sb.append("\"id\":\"").append(escape(id)).append("\",");
+        }
+
+        sb.append("\"date\":\"").append(escape(date)).append("\",")
           .append("\"drills\":\"").append(escape(drills)).append("\",")
           .append("\"roundsCount\":").append(roundsCount == null ? 0 : roundsCount).append(",")
           .append("\"rounds\":[");
