@@ -24,8 +24,9 @@ public class BJJWorkoutLog {
             System.out.println("3) Update existing workout (by date)");
             System.out.println("4) Export CSV");
             System.out.println("5) Stats (basic)");
-            System.out.println("6) Quit");
-            int choice = promptIntRange(in, "Choose an option (1-6): ", 1, 6);
+            System.out.println("6) Delete workout (by ID)");
+            System.out.println("7) Quit");
+            int choice = promptIntRange(in, "Choose an option (1-7): ", 1, 7);
 
             try {
                 if (choice == 1) {
@@ -38,6 +39,8 @@ public class BJJWorkoutLog {
                     exportCsv(repo);
                 } else if (choice == 5) {
                     showStats(repo);
+                } else if (choice == 6) {
+                    deleteWorkoutById(in, repo);
                 } else {
                     System.out.println("Good training. See you next time!");
                     break;
@@ -58,7 +61,7 @@ public class BJJWorkoutLog {
         System.out.println("\n--- Workout Saved ---");
         System.out.println("ID:    " + w.id);
         System.out.println("Date:  " + w.date);
-        System.out.println("Drills:" + w.drills);
+        System.out.println("Drills: " + w.drills);
         System.out.println("Rounds logged: " + w.roundsCount);
         System.out.println("Notes: " + w.notes);
         System.out.println("Appended to: data/workouts.jsonl");
@@ -80,7 +83,7 @@ public class BJJWorkoutLog {
         for (int i = 0; i < slice.size(); i++) {
             String json = slice.get(i);
 
-            String id   = JsonlRepository.extract(json, "\"id\":\"", "\"");   // may be null for older entries
+            String id   = JsonlRepository.extract(json, "\"id\":\"", "\"");
             String date = JsonlRepository.extract(json, "\"date\":\"", "\"");
             String drills = JsonlRepository.extract(json, "\"drills\":\"", "\"");
             String roundsCountStr = JsonlRepository.extract(json, "\"roundsCount\":", ",");
@@ -101,7 +104,6 @@ public class BJJWorkoutLog {
                 System.out.println("Notes:  " + notes);
             }
 
-            // Round details
             String roundsBlock = JsonlRepository.extract(json, "\"rounds\":[", "],\"notes\"");
             if (roundsBlock != null && !roundsBlock.trim().isEmpty()) {
                 List<String> roundObjects = JsonlRepository.splitRoundObjects(roundsBlock);
@@ -341,6 +343,60 @@ public class BJJWorkoutLog {
         System.out.println("-- End of stats --");
     }
 
+    private static void deleteWorkoutById(Scanner input, WorkoutRepository repo) throws Exception {
+        System.out.println("\n-- Delete Workout (by ID) --");
+        List<String> lines = repo.readAllJsonLines();
+        if (lines.isEmpty()) {
+            System.out.println("No workouts found.");
+            return;
+        }
+
+        String idQuery = promptString(input, "Enter workout ID to delete: ");
+        if (idQuery.isBlank()) {
+            System.out.println("No ID entered. Aborting.");
+            return;
+        }
+
+        int targetIndex = -1;
+        String targetJson = null;
+
+        for (int i = 0; i < lines.size(); i++) {
+            String json = lines.get(i);
+            String id = JsonlRepository.extract(json, "\"id\":\"", "\"");
+            if (idQuery.equals(id)) {
+                targetIndex = i;
+                targetJson = json;
+                break;
+            }
+        }
+
+        if (targetIndex == -1) {
+            System.out.println("No workout found with ID: " + idQuery);
+            return;
+        }
+
+        String date = JsonlRepository.extract(targetJson, "\"date\":\"", "\"");
+        String drills = JsonlRepository.extract(targetJson, "\"drills\":\"", "\"");
+        String roundsCountStr = JsonlRepository.extract(targetJson, "\"roundsCount\":", ",");
+        if (roundsCountStr == null) roundsCountStr = "0";
+        int roundsCount = JsonlRepository.safeInt(roundsCountStr);
+
+        System.out.println("\nWorkout to delete:");
+        System.out.println("ID:     " + idQuery);
+        System.out.println("Date:   " + (date == null ? "(unknown)" : date));
+        System.out.println("Drills: " + (drills == null ? "(unknown)" : drills));
+        System.out.println("Rounds: " + roundsCount);
+
+        String ok = promptString(input, "Are you sure you want to delete this workout? (y/n): ").toLowerCase();
+        if (!ok.startsWith("y")) {
+            System.out.println("Delete cancelled.");
+            return;
+        }
+
+        repo.deleteLine(targetIndex);
+        System.out.println("Workout deleted.");
+    }
+
     // ---------- Prompts & helpers ----------
 
     private static Workout promptWorkout(Scanner input) {
@@ -388,7 +444,7 @@ public class BJJWorkoutLog {
         String notes = promptString(input, "\nAny overall notes? ");
 
         Workout w = new Workout();
-        w.id = UUID.randomUUID().toString();  // NEW: assign unique ID
+        w.id = UUID.randomUUID().toString();
         w.date = date;
         w.drills = drills;
         w.roundsCount = roundsCount;

@@ -51,7 +51,6 @@ public class JsonlRepository implements WorkoutRepository {
             throw new IllegalArgumentException("Index out of range: " + index);
         }
 
-        // Safety backup then atomic write
         Path bak = dataDir.resolve("workouts.jsonl.bak");
         try {
             Files.copy(dataFile, bak, StandardCopyOption.REPLACE_EXISTING);
@@ -73,7 +72,36 @@ public class JsonlRepository implements WorkoutRepository {
         Files.move(tmp, dataFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
-    // ---------- helpers for callers (simple parsing utilities) ----------
+    @Override
+    public void deleteLine(int index) throws Exception {
+        List<String> lines = readAllJsonLines();
+        if (index < 0 || index >= lines.size()) {
+            throw new IllegalArgumentException("Index out of range: " + index);
+        }
+
+        Path bak = dataDir.resolve("workouts.jsonl.bak");
+        try {
+            Files.copy(dataFile, bak, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            System.err.println("Warning: couldn't create backup: " + e.getMessage());
+        }
+
+        Path tmp = dataDir.resolve("workouts.jsonl.tmp");
+        try (BufferedWriter bw = Files.newBufferedWriter(
+                tmp, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING)) {
+            for (int i = 0; i < lines.size(); i++) {
+                if (i == index) continue; // skip the deleted line
+                bw.write(lines.get(i));
+                bw.write(System.lineSeparator());
+            }
+        }
+        Files.move(tmp, dataFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    // ---------- helpers for callers ----------
+
     public static String extract(String text, String startMarker, String endMarker) {
         int s = text.indexOf(startMarker);
         if (s < 0) return null;
@@ -84,7 +112,11 @@ public class JsonlRepository implements WorkoutRepository {
     }
 
     public static int safeInt(String s) {
-        try { return Integer.parseInt(s.trim()); } catch (Exception e) { return 0; }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     // split {...},{...} inside an array block

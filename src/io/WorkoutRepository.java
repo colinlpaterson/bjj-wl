@@ -5,7 +5,12 @@ import java.util.List;
 
 public interface WorkoutRepository {
     void append(Workout w) throws Exception;
-    List<String> readAllJsonLines() throws Exception; // raw lines for now (simple)
-    void replaceLine(int index, Workout replacement) throws Exception; // update by index
+
+    List<String> readAllJsonLines() throws Exception;
+
+    void replaceLine(int index, Workout replacement) throws Exception;
+
+    // NEW: delete a workout at the given line index
+    void deleteLine(int index) throws Exception;
 }
 
