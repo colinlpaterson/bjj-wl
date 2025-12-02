@@ -20,13 +20,14 @@ public class BJJWorkoutLog {
         while (true) {
             System.out.println("\n=== BJJ Workout Log ===");
             System.out.println("1) Add workout");
-            System.out.println("2) View recent workouts");
+            System.out.println("2) View recent workouts (detailed)");
             System.out.println("3) Update existing workout (by date)");
             System.out.println("4) Export CSV");
             System.out.println("5) Stats (basic)");
             System.out.println("6) Delete workout (by ID)");
-            System.out.println("7) Quit");
-            int choice = promptIntRange(in, "Choose an option (1-7): ", 1, 7);
+            System.out.println("7) List recent workouts (summary)");
+            System.out.println("8) Quit");
+            int choice = promptIntRange(in, "Choose an option (1-8): ", 1, 8);
 
             try {
                 if (choice == 1) {
@@ -41,10 +42,14 @@ public class BJJWorkoutLog {
                     showStats(repo);
                 } else if (choice == 6) {
                     deleteWorkoutById(in, repo);
+                } else if (choice == 7) {
+                    listRecentSummary(in, repo);
                 } else {
                     System.out.println("Good training. See you next time!");
                     break;
                 }
+            } catch (UserCancelledException uce) {
+                System.out.println("Action cancelled. Returning to main menu.");
             } catch (Exception e) {
                 System.err.println("Error: " + e.getMessage());
             }
@@ -59,16 +64,16 @@ public class BJJWorkoutLog {
         Workout w = promptWorkout(input);
         repo.append(w);
         System.out.println("\n--- Workout Saved ---");
-        System.out.println("ID:    " + w.id);
-        System.out.println("Date:  " + w.date);
+        System.out.println("ID:     " + w.id);
+        System.out.println("Date:   " + w.date);
         System.out.println("Drills: " + w.drills);
         System.out.println("Rounds logged: " + w.roundsCount);
-        System.out.println("Notes: " + w.notes);
+        System.out.println("Notes:  " + w.notes);
         System.out.println("Appended to: data/workouts.jsonl");
     }
 
     private static void viewRecent(Scanner input, WorkoutRepository repo) throws Exception {
-        System.out.println("\n-- View Recent Workouts --");
+        System.out.println("\n-- View Recent Workouts (detailed) --");
         List<String> lines = repo.readAllJsonLines();
         if (lines.isEmpty()) {
             System.out.println("No workouts found yet. Log one first!");
@@ -96,6 +101,8 @@ public class BJJWorkoutLog {
             System.out.println("\n#" + (start + i + 1));
             if (id != null && !id.isEmpty()) {
                 System.out.println("ID:     " + id);
+            } else {
+                System.out.println("ID:     (no id)");
             }
             System.out.println("Date:   " + (date != null ? date : "(unknown)"));
             System.out.println("Drills: " + (drills != null ? drills : "(unknown)"));
@@ -137,6 +144,45 @@ public class BJJWorkoutLog {
             }
         }
         System.out.println("\n(End of list)");
+    }
+
+    private static void listRecentSummary(Scanner input, WorkoutRepository repo) throws Exception {
+        System.out.println("\n-- List Recent Workouts (summary) --");
+        List<String> lines = repo.readAllJsonLines();
+        if (lines.isEmpty()) {
+            System.out.println("No workouts found yet. Log one first!");
+            return;
+        }
+
+        int n = promptIntRange(input, "How many most recent workouts to list? ", 1, 1000);
+        int start = Math.max(0, lines.size() - n);
+        List<String> slice = lines.subList(start, lines.size());
+
+        System.out.println("\n--- Summary of " + slice.size() + " workout(s) ---");
+        for (int i = 0; i < slice.size(); i++) {
+            String json = slice.get(i);
+
+            String id   = JsonlRepository.extract(json, "\"id\":\"", "\"");
+            String date = JsonlRepository.extract(json, "\"date\":\"", "\"");
+            String drills = JsonlRepository.extract(json, "\"drills\":\"", "\"");
+            String roundsCountStr = JsonlRepository.extract(json, "\"roundsCount\":", ",");
+
+            if (roundsCountStr == null) roundsCountStr = "0";
+            int roundsCount = JsonlRepository.safeInt(roundsCountStr);
+
+            String idDisplay = (id != null && !id.isEmpty()) ? id : "(no id)";
+            String dateDisplay = (date != null) ? date : "(unknown)";
+            String drillsDisplay = (drills != null) ? drills : "";
+
+            System.out.println(
+                    "#" + (start + i + 1)
+                    + " | ID=" + idDisplay
+                    + " | Date=" + dateDisplay
+                    + " | Rounds=" + roundsCount
+                    + " | Drills=" + drillsDisplay
+            );
+        }
+        System.out.println("\n(End of summary)");
     }
 
     private static void updateByDate(Scanner input, WorkoutRepository repo) throws Exception {
@@ -335,8 +381,7 @@ public class BJJWorkoutLog {
         System.out.println("Total submissions (for): " + totalSubFor);
         System.out.println("Total submissions (vs):  " + totalSubAgainst);
         if (roundsWithDuration > 0) {
-            System.out.printf("Avg round duration:      %.1f min (%d rounds with duration)%n",
-                    avgDuration, roundsWithDuration);
+            System.out.printf("Avg round duration:      %.1f min%n", avgDuration);
         } else {
             System.out.println("Avg round duration:      (no duration data yet)");
         }
@@ -491,13 +536,20 @@ public class BJJWorkoutLog {
 
     private static String promptString(Scanner sc, String msg) {
         System.out.print(msg);
-        return sc.nextLine().trim();
+        String line = sc.nextLine().trim();
+        if (line.equalsIgnoreCase("q")) {
+            throw new UserCancelledException();
+        }
+        return line;
     }
 
     private static int promptInt(Scanner sc, String msg) {
         while (true) {
             System.out.print(msg);
             String line = sc.nextLine().trim();
+            if (line.equalsIgnoreCase("q")) {
+                throw new UserCancelledException();
+            }
             try {
                 return Integer.parseInt(line);
             } catch (NumberFormatException nfe) {
@@ -523,6 +575,10 @@ public class BJJWorkoutLog {
         boolean needsQuotes = x.contains(",") || x.contains("\"") || x.contains("\n") || x.contains("\r");
         if (needsQuotes) x = "\"" + x.replace("\"", "\"\"") + "\"";
         return x;
+    }
+
+    // thrown when user types 'q' to cancel an action
+    private static class UserCancelledException extends RuntimeException {
     }
 }
 
