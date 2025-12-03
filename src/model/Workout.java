@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Workout {
-    // NEW: unique identifier for this workout
+    // Unique identifier
     public String id;
 
-    public String date;     // ISO yyyy-MM-dd
+    public String date;           // ISO yyyy-MM-dd
+    public String workoutType;    // "Gi" or "No-gi"
     public String drills;
     public Integer roundsCount;
     public List<Round> rounds = new ArrayList<>();
@@ -22,8 +23,14 @@ public class Workout {
             sb.append("\"id\":\"").append(escape(id)).append("\",");
         }
 
-        sb.append("\"date\":\"").append(escape(date)).append("\",")
-          .append("\"drills\":\"").append(escape(drills)).append("\",")
+        sb.append("\"date\":\"").append(escape(date)).append("\",");
+
+        // workoutType is optional for older records too
+        if (workoutType != null && !workoutType.isEmpty()) {
+            sb.append("\"workoutType\":\"").append(escape(workoutType)).append("\",");
+        }
+
+        sb.append("\"drills\":\"").append(escape(drills)).append("\",")
           .append("\"roundsCount\":").append(roundsCount == null ? 0 : roundsCount).append(",")
           .append("\"rounds\":[");
         for (int i = 0; i < rounds.size(); i++) {
