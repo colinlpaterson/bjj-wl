@@ -594,17 +594,26 @@ public class BJJWorkoutLog {
             r.timesYouWereSubmitted = promptIntRange(input,
                     "5) Times you were submitted (0–20): ", 0, 20);
 
-            r.submissionTypesAgainst = promptString(input,
-                    "6) Submission type(s) they used (comma-separated): ");
+            if (r.timesYouWereSubmitted > 0) {
+                r.submissionTypesAgainst = promptString(input,
+                        "6) Submission type(s) they used (comma-separated): ");
+            } else {
+                r.submissionTypesAgainst = "";
+            }
 
             r.timesYouSubmittedPartner = promptIntRange(input,
                     "7) Times you submitted partner (0–20): ", 0, 20);
 
-            r.submissionTypesFor = promptString(input,
-                    "8) Submission type(s) you used (comma-separated): ");
+            if (r.timesYouSubmittedPartner > 0) {
+                r.submissionTypesFor = promptString(input,
+                        "8) Submission type(s) you used (comma-separated): ");
+            } else {
+                r.submissionTypesFor = "";
+            }
 
             r.observations = promptString(input,
                     "9) Observations of the round: ");
+
 
             rounds.add(r);
         }
